@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SignInRouter = void 0;
+const express_1 = require("express");
+exports.SignInRouter = (0, express_1.Router)();
+const SignInInputValidation_1 = require("../middlewares/SignInInputValidation");
+const SignINHandler_1 = require("../controllers/SignINHandler");
+const GoogleHandler_1 = require("../utilities/GoogleHandler");
+exports.SignInRouter.post('/signin', SignInInputValidation_1.SignInInputValidationMiddleware, SignINHandler_1.SignINHandler);
+exports.SignInRouter.get('/google-signin', GoogleHandler_1.GoogleHandler);
