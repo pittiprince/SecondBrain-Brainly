@@ -18,24 +18,25 @@ const passwordHasing_1 = require("../utilities/passwordHasing");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const UserSignupHandler = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let userSignupDetails = req.body;
-        let isUserTrue = yield SignupModel_1.SignupModel.findOne({ email: userSignupDetails.email });
-        if (isUserTrue) {
-            res.status(400).json({ "message:": "User already exist with the same email" });
+        const userSignupDetails = req.body;
+        const existingUser = yield SignupModel_1.SignupModel.findOne({ email: userSignupDetails.email });
+        if (existingUser) {
+            res.status(400).json({ message: "User already exists with the same email" });
+            return;
         }
         const hashedPassword = yield (0, passwordHasing_1.passwordHashing)(userSignupDetails.password);
-        let dbwrite = yield SignupModel_1.SignupModel.create({
+        const newUser = new SignupModel_1.SignupModel({
             name: userSignupDetails.name,
             email: userSignupDetails.email,
             password: hashedPassword
         });
-        let JWT = jsonwebtoken_1.default.sign({ email: userSignupDetails.email }, process.env.JWT_SECRET_KEY);
-        yield dbwrite.updateOne({ SecretKey: JWT });
-        dbwrite.save();
-        res.status(200).json({ message: "User Signed Up Successfully", jwtKey: JWT });
+        const jwtToken = jsonwebtoken_1.default.sign({ email: userSignupDetails.email }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+        newUser.SecretKey = jwtToken;
+        yield newUser.save();
+        res.status(201).json({ message: "User Signed Up Successfully", jwtKey: jwtToken });
     }
     catch (error) {
-        res.status(500).json({ message: error });
+        res.status(500).json({ message: error.message || "Internal Server Error" });
     }
 });
 exports.UserSignupHandler = UserSignupHandler;

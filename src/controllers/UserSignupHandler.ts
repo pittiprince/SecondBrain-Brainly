@@ -6,23 +6,28 @@ import jwt from 'jsonwebtoken';
 
 export const UserSignupHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-        let userSignupDetails: SignupUserInterface = req.body;
-        let isUserTrue = await SignupModel.findOne({email:userSignupDetails.email})
-        if(isUserTrue){
-            res.status(400).json({"message:":"User already exist with the same email"})
+        const userSignupDetails: SignupUserInterface = req.body;
+
+        const existingUser = await SignupModel.findOne({ email: userSignupDetails.email });
+        if (existingUser) {
+            res.status(400).json({ message: "User already exists with the same email" });
+            return;
         }
+
         const hashedPassword = await passwordHashing(userSignupDetails.password);
-        let dbwrite = await SignupModel.create({
+        const newUser = new SignupModel({
             name: userSignupDetails.name,
             email: userSignupDetails.email,
             password: hashedPassword
-        })
-        let JWT = jwt.sign({ email: userSignupDetails.email }, process.env.JWT_SECRET_KEY as string);
-        await dbwrite.updateOne({ SecretKey: JWT }); 
-        dbwrite.save(); 
-        res.status(200).json({ message: "User Signed Up Successfully" , jwtKey: JWT});
+        });
 
+        const jwtToken = jwt.sign({ email: userSignupDetails.email }, process.env.JWT_SECRET_KEY as string, { expiresIn: '1h' });
+        newUser.SecretKey = jwtToken;
+
+        await newUser.save();
+
+        res.status(201).json({ message: "User Signed Up Successfully", jwtKey: jwtToken });
     } catch (error: any) {
-        res.status(500).json({ message: error })
+        res.status(500).json({ message: error.message || "Internal Server Error" });
     }
 }
