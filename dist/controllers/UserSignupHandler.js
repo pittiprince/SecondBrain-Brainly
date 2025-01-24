@@ -19,6 +19,10 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const UserSignupHandler = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let userSignupDetails = req.body;
+        let isUserTrue = yield SignupModel_1.SignupModel.findOne({ email: userSignupDetails.email });
+        if (isUserTrue) {
+            res.status(400).json({ "message:": "User already exist with the same email" });
+        }
         const hashedPassword = yield (0, passwordHasing_1.passwordHashing)(userSignupDetails.password);
         let dbwrite = yield SignupModel_1.SignupModel.create({
             name: userSignupDetails.name,

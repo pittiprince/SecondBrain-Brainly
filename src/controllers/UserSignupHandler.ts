@@ -7,6 +7,10 @@ import jwt from 'jsonwebtoken';
 export const UserSignupHandler = async (req: Request, res: Response): Promise<void> => {
     try {
         let userSignupDetails: SignupUserInterface = req.body;
+        let isUserTrue = await SignupModel.findOne({email:userSignupDetails.email})
+        if(isUserTrue){
+            res.status(400).json({"message:":"User already exist with the same email"})
+        }
         const hashedPassword = await passwordHashing(userSignupDetails.password);
         let dbwrite = await SignupModel.create({
             name: userSignupDetails.name,
