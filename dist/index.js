@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
 const PORT = 3000;
 const SignupRoutes_1 = __importDefault(require("./routes/SignupRoutes"));
@@ -27,6 +28,7 @@ const SignOut_1 = require("./routes/SignOut");
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, express_openid_connect_1.auth)(Auth0Config_1.config));
+app.use((0, cors_1.default)());
 app.use('/api', SignupRoutes_1.default);
 app.use('/api', SigninRoutes_1.SignInRouter);
 app.use('/api', MemoryRoutes_1.MemoryRouter);

@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 const app: express.Application = express();
 const PORT: number = 3000;
 import UserSignupRouter from './routes/SignupRoutes';
@@ -15,7 +16,7 @@ import { SignOutRouter } from './routes/SignOut';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(auth(config));
-
+app.use(cors());
 app.use('/api', UserSignupRouter);
 app.use('/api', SignInRouter);
 app.use('/api', MemoryRouter);
