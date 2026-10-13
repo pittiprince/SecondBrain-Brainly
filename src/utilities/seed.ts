@@ -2,11 +2,15 @@ import { SignupModel } from "../models/SignupModel";
 import { MemoryModel } from "../models/MemoryModel";
 import { ContentType } from "../interface/MemoryInterface";
 import { passwordHashing } from "./passwordHasing";
+import { deriveImage } from "./thumbnail";
 
 export const DEMO_EMAIL = "demo@brainly.dev";
 export const DEMO_PASSWORD = "Demo@12345";
 
-const m = (type: ContentType, link: string, title: string, desc: string, tags: string[]) => ({ type, link, title, desc, tags });
+const m = (type: ContentType, link: string, title: string, desc: string, tags: string[]) => ({
+    type, link, title, desc, tags,
+    image: deriveImage(type, link) ?? `https://picsum.photos/seed/${encodeURIComponent(title.toLowerCase().replace(/[^a-z0-9]+/g, "-"))}/640/360`,
+});
 
 const MEMORIES = [
     m(ContentType.YoutubeLink, "https://www.youtube.com/watch?v=Ke90Tje7VS0", "React in 100 seconds", "A fast overview of what React is and how components and state work.", ["react", "frontend", "video"]),
@@ -29,6 +33,11 @@ export const seedDemoData = async () => {
     }
     if ((await MemoryModel.countDocuments({ UserObjectId: user._id })) === 0) {
         await MemoryModel.insertMany(MEMORIES.map((x) => ({ ...x, UserObjectId: user!._id })));
+    } else {
+        // databases seeded before images existed: backfill the preview image by link
+        await MemoryModel.bulkWrite(MEMORIES.map((x) => ({
+            updateOne: { filter: { UserObjectId: user!._id, link: x.link, image: { $exists: false } }, update: { $set: { image: x.image } } },
+        })));
     }
     console.log("Demo data ready (SEED_DEMO=true)");
 };

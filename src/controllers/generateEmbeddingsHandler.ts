@@ -41,6 +41,6 @@ export const searchEmbeddingKeywordHandler = async (req: Request, res: Response)
    }
    res.status(200).json({
       results: found.map((x) => x._id),
-      memories: found.map((m) => ({ MemoryObjectId: m._id, type: m.type, link: m.link, title: m.title, desc: m.desc, tags: m.tags })),
+      memories: found.map((m) => ({ MemoryObjectId: m._id, type: m.type, link: m.link, title: m.title, desc: m.desc, image: m.image, tags: m.tags })),
    });
 };

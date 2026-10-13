@@ -13,6 +13,7 @@ type: ContentType;
 link: string;
 title: string;
 desc: string;
+image?: string;
 tags: string[];
 embedding_Vectors?: number[];
 }

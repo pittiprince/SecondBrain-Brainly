@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { MemoryModel } from "../models/MemoryModel";
+import { deriveImage } from "../utilities/thumbnail";
 
 const publicView = (m: any) => ({
   MemoryObjectId: m._id,
@@ -7,6 +8,7 @@ const publicView = (m: any) => ({
   link: m.link,
   title: m.title,
   desc: m.desc,
+  image: m.image,
   tags: m.tags,
   createdAt: m.createdAt,
   updatedAt: m.updatedAt,
@@ -14,8 +16,8 @@ const publicView = (m: any) => ({
 
 // Create a memory for the signed-in user (the owner always comes from the token).
 export const MemoryHandler = async (req: Request, res: Response) => {
-  const { type, link, title, desc, tags } = req.body;
-  const created = await MemoryModel.create({ UserObjectId: req.user!.id, type, link, title, desc, tags });
+  const { type, link, title, desc, tags, image } = req.body;
+  const created = await MemoryModel.create({ UserObjectId: req.user!.id, type, link, title, desc, tags, image: image ?? deriveImage(type, link) });
   res.status(201).json({ message: "Successfully added the memory", MemoryObjectId: created._id });
 };
 
@@ -45,6 +47,7 @@ export const GetMemoryHandler = async (req: Request, res: Response) => {
 // Update one of the user's own memories.
 export const updateMemoryHandler = async (req: Request, res: Response) => {
   const { MemoryObjectId, ...changes } = req.body;
+  if (changes.image === undefined && changes.link && changes.type) changes.image = deriveImage(changes.type, changes.link);
   const updated = await MemoryModel.findOneAndUpdate(
     { _id: MemoryObjectId, UserObjectId: req.user!.id },
     { $set: changes },
