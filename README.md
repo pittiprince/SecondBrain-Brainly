@@ -31,7 +31,7 @@ Send `Authorization: Bearer <token>` on every route except signup/signin.
 | POST | `/fileUpload` | multipart, field `pdf` (≤10 MB) → Cloudinary URL |
 | GET | `/health` (no `/api`) | Health check |
 
-Search uses MongoDB Atlas Search (index named `query_search` on the `memories` collection, dynamic mapping) and falls back to a plain text match when the index is unavailable.
+Search uses MongoDB's built-in text index (ranked by title, tags, description; free, nothing to set up) and falls back to a partial-word match. Embeddings with a Hugging Face token are optional.
 
 ## Deploy (Render + Atlas)
 1. MongoDB Atlas M0 cluster, allow `0.0.0.0/0`, copy the connection string into `db_URL`.

@@ -24,27 +24,20 @@ export const generateEmbeddingsHuggingFace = async (req: Request, res: Response)
 };
 
 // Keyword search over the signed-in user's own memories only.
+// 1) MongoDB's built-in text index (ranked, stemmed, free); 2) partial-word regex match when that finds nothing.
 export const searchEmbeddingKeywordHandler = async (req: Request, res: Response) => {
    const { keyword } = req.body;
    const userId = req.user!.id;
-   let found: any[];
-   try {
-      // Atlas Search (needs the "query_search" index on the Memory collection)
-      const { Types } = await import("mongoose");
-      found = await MemoryModel.aggregate([
-         { $search: { index: "query_search", text: { query: keyword, path: { wildcard: "*" } } } },
-         { $match: { UserObjectId: new Types.ObjectId(userId) } },
-         { $limit: 50 },
-         { $project: { embedding_Vectors: 0 } },
-      ]);
-   } catch (err: any) {
-      // no Atlas Search index (local MongoDB, index still building): fall back to a plain regex match
-      console.warn("Atlas Search unavailable, using regex fallback:", err?.message);
+   const fields = { embedding_Vectors: 0 };
+   let found: any[] = await MemoryModel.find({ UserObjectId: userId, $text: { $search: keyword } }, fields)
+      .sort({ score: { $meta: "textScore" } } as any)
+      .limit(50);
+   if (found.length === 0) {
       const rx = new RegExp(escapeRegex(keyword), "i");
       found = await MemoryModel.find({
          UserObjectId: userId,
          $or: [{ title: rx }, { desc: rx }, { tags: rx }],
-      }).limit(50);
+      }, fields).limit(50);
    }
    res.status(200).json({
       results: found.map((x) => x._id),

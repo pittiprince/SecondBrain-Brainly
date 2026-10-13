@@ -16,6 +16,8 @@ const MemorySchema = new Schema<MemoryInterface>({
 }
 )
  MemorySchema.index({ UserObjectId: 1, createdAt: -1 });
+ // built-in full-text search (free, works on Atlas M0 and any MongoDB; no external index to create)
+ MemorySchema.index({ title: 'text', desc: 'text', tags: 'text' }, { weights: { title: 5, tags: 3, desc: 1 }, name: 'memory_text' });
 
  // model
 

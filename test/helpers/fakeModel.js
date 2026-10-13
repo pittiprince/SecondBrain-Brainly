@@ -5,6 +5,7 @@ const newId = () => crypto.randomBytes(12).toString('hex');
 const matches = (row, filter) =>
     Object.entries(filter).every(([k, v]) => {
         if (k === '$or') return v.some((f) => matches(row, f));
+        if (k === '$text') { const w = String(v.$search).toLowerCase(); return `${row.title} ${row.desc} ${(row.tags || []).join(' ')}`.toLowerCase().split(/\W+/).includes(w); }
         if (v instanceof RegExp) return Array.isArray(row[k]) ? row[k].some((x) => v.test(x)) : v.test(String(row[k]));
         return String(row[k]) === String(v);
     });
