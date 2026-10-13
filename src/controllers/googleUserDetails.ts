@@ -17,5 +17,10 @@ export const googleUserDetails = async (req: Request, res: Response) => {
         user = await GoogleAuthModel.create({ name: profile.name ?? email, email, email_verified: Boolean(profile.email_verified) });
     }
     const jwtKey = signToken({ id: String(user._id), email });
+    // with a configured web app, hand the token to it (in the URL fragment, which is never sent to a server or logged)
+    if (process.env.FRONTEND_URL) {
+        res.redirect(`${process.env.FRONTEND_URL.replace(/\/$/, "")}/google-auth#token=${encodeURIComponent(jwtKey)}`);
+        return;
+    }
     res.status(200).json({ message: isNew ? "New User Created" : "Verified existing user", jwtKey, token: jwtKey });
 };
