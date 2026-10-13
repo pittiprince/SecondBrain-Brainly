@@ -47,7 +47,10 @@ export const GetMemoryHandler = async (req: Request, res: Response) => {
 // Update one of the user's own memories.
 export const updateMemoryHandler = async (req: Request, res: Response) => {
   const { MemoryObjectId, ...changes } = req.body;
-  if (changes.image === undefined && changes.link && changes.type) changes.image = deriveImage(changes.type, changes.link);
+  if (changes.image === undefined && changes.link && changes.type) {
+    const derived = deriveImage(changes.type, changes.link);
+    if (derived) changes.image = derived;
+  }
   const updated = await MemoryModel.findOneAndUpdate(
     { _id: MemoryObjectId, UserObjectId: req.user!.id },
     { $set: changes },
