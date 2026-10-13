@@ -2,32 +2,26 @@ import { Request, Response } from "express";
 import { SignupUserInterface } from "../interface/SignupUserInterface";
 import { SignupModel } from "../models/SignupModel";
 import { passwordHashing } from "../utilities/passwordHasing";
-import jwt from 'jsonwebtoken';
+import { signToken } from "../utilities/token";
 
 export const UserSignupHandler = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userSignupDetails: SignupUserInterface = req.body;
+    const { name, email, password }: SignupUserInterface = req.body;
 
-        const existingUser = await SignupModel.findOne({ email: userSignupDetails.email });
-        if (existingUser) {
-            res.status(400).json({ message: "User already exists with the same email" });
+    if (await SignupModel.findOne({ email })) {
+        res.status(409).json({ message: "User already exists with the same email" });
+        return;
+    }
+
+    try {
+        const user = await SignupModel.create({ name, email, password: await passwordHashing(password) });
+        const jwtToken = signToken({ id: String(user._id), email });
+        // "jwtKey" is the name the first version of the API used
+        res.status(201).json({ message: "User Signed Up Successfully", jwtKey: jwtToken, token: jwtToken, user: { id: user._id, name, email } });
+    } catch (error: any) {
+        if (error?.code === 11000) {
+            res.status(409).json({ message: "User already exists with the same email" });
             return;
         }
-
-        const hashedPassword = await passwordHashing(userSignupDetails.password);
-        const newUser = new SignupModel({
-            name: userSignupDetails.name,
-            email: userSignupDetails.email,
-            password: hashedPassword
-        });
-
-        const jwtToken = jwt.sign({ email: userSignupDetails.email }, process.env.JWT_SECRET_KEY as string, { expiresIn: '1h' });
-        newUser.SecretKey = jwtToken;
-
-        await newUser.save();
-
-        res.status(201).json({ message: "User Signed Up Successfully", jwtKey: jwtToken });
-    } catch (error: any) {
-        res.status(500).json({ message: error.message || "Internal Server Error" });
+        throw error;
     }
-}
+};

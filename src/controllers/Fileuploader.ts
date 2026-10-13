@@ -1,33 +1,25 @@
-import { Request,Response } from "express";
+import { Request, Response } from "express";
+import * as fs from "fs";
 import { upload } from "../middlewares/multerMiddleware";
 import { uploadToCloudinary } from "../utilities/cloudinary";
-import * as fs from 'fs';
 
-export const FileUpload = async (req: Request, res: Response): Promise<void> => {
-    try{
-    upload.single('pdf')(req, res, async (err) => {
+export const FileUpload = (req: Request, res: Response): void => {
+    upload.single("pdf")(req, res, async (err: any) => {
         if (err) {
-            return res.status(400).json({ message: err.message });
+            res.status(400).json({ message: err.message });
+            return;
         }
-        let uploadedUrl;
-        if(req.file){
-            uploadedUrl = await uploadToCloudinary(req.file);
-            if (!uploadedUrl) {
-                return res.status(500).json({ message: "Failed to upload file to Cloudinary" });
-            }
-            if(uploadedUrl){
-                res.status(200).json({"message":"File has been uploaded" , "uploadedURl" :uploadedUrl})
-                fs.unlinkSync(req.file.path)
-            }
+        if (!req.file) {
+            res.status(400).json({ message: "Send a PDF in the 'pdf' form field" });
+            return;
         }
-        console.log(req.file);
-        
+        try {
+            const uploadedUrl = await uploadToCloudinary(req.file);
+            res.status(200).json({ message: "File has been uploaded", uploadedURl: uploadedUrl, uploadedURL: uploadedUrl });
+        } catch {
+            res.status(500).json({ message: "Failed to upload file" });
+        } finally {
+            fs.unlink(req.file.path, () => undefined);
+        }
     });
-        
-    }catch(error: any){
-        if(req.file){
-            fs.unlinkSync(req.file.path)
-        }
-        res.status(500).json({message: error})
-    }
-}
+};

@@ -1,24 +1,9 @@
-import { Request,Response,NextFunction } from "express";
-import {z} from "zod"
+import { z } from "zod";
+import { validate } from "./validate";
 
-//zod schmea
+// the user comes from the token; the old UserObjectId body field is ignored
 const SearchEmbeddingValidationSchema = z.object({
-    UserObjectId:z.string(),
-    keyword:z.string().min(3,{"message":"Minimum 3 characters"})
-})
+    keyword: z.string().trim().min(3, { message: "Minimum 3 characters" }).max(100, { message: "Maximum 100 characters" }),
+});
 
-export const SearchEmbeddingValidation = async(req:Request,res:Response , next:NextFunction)=>{
-    const isParsedTrue = SearchEmbeddingValidationSchema.safeParse(req.body)
-    try{
-        if(isParsedTrue.success){
-            next()
-        }
-        if(isParsedTrue.error){
-            res.status(400).json({"message":isParsedTrue.error.message})
-        }
-        
-    }catch(err){
-        console.log(err)
-        res.status(500).json({"error message" :err})
-    }
-}
+export const SearchEmbeddingValidation = validate(SearchEmbeddingValidationSchema);

@@ -15,6 +15,8 @@ const MemorySchema = new Schema<MemoryInterface>({
     timestamps: true
 }
 )
+ MemorySchema.index({ UserObjectId: 1, createdAt: -1 });
+
  // model
 
  export const MemoryModel = model<MemoryInterface>("Memory",MemorySchema);

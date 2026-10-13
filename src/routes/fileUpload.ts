@@ -4,4 +4,4 @@ import verifyJwtMiddleware from "../middlewares/JWTverify";
 
 export const FileUploadRouter = Router();
 
-FileUploadRouter.post('/fileUpload',verifyJwtMiddleware,FileUpload )
+FileUploadRouter.post('/fileUpload', verifyJwtMiddleware, FileUpload)

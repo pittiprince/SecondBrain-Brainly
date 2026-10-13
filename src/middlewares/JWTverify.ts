@@ -1,34 +1,30 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import dotenv from 'dotenv';
-dotenv.config();
+import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET_KEY
-
-interface AuthenticatedRequest extends Request {
-    user?: JwtPayload | string; // Add user info to the request object if needed
-}
-
-const verifyJwtMiddleware = (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-) => {
+// Reads "Authorization: Bearer <token>", verifies it and exposes req.user = { id, email }.
+const verifyJwtMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    const secret = process.env.JWT_SECRET_KEY;
+    if (!secret) {
+        res.status(500).json({ message: "Server is not configured" });
+        return;
+    }
+    const header = req.headers.authorization;
+    const token = header && header.startsWith("Bearer ") ? header.slice(7) : undefined;
+    if (!token) {
+        res.status(401).json({ message: "Authentication required" });
+        return;
+    }
     try {
-        const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
-        if (!token) {
-            return res.redirect("/login");
+        const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+        if (typeof decoded.id !== "string" || typeof decoded.email !== "string") {
+            // tokens issued by the old version carried only the email: ask the user to sign in again
+            res.status(401).json({ message: "Session expired, please sign in again" });
+            return;
         }
-
-        if (!JWT_SECRET) {
-            throw new Error("JWT_SECRET_KEY is not defined");
-        }
-        const decoded = jwt.verify(token, JWT_SECRET); // Verify the token
-        req.user = decoded; // Attach user data to the request object
-        next(); // Proceed to the next handler
-    } catch (error) {
-        console.error("JWT verification failed:", error);
-        return res.redirect("/login");
+        req.user = { id: decoded.id, email: decoded.email };
+        next();
+    } catch {
+        res.status(401).json({ message: "Invalid or expired token" });
     }
 };
 

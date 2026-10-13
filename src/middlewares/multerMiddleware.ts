@@ -1,16 +1,25 @@
 import multer from "multer";
-import { nextTick } from "process";
+import os from "os";
+import path from "path";
 
-
-//create a multer Storage
+// temporary files go to the OS temp dir (always exists and is writable) and are removed after the Cloudinary upload
 const tempStorage = multer.diskStorage({
-    destination(req, file, callback) {
-        callback(null, 'src/uploads');
+    destination(_req, _file, callback) {
+        callback(null, os.tmpdir());
     },
-    filename(req, file, callback) {
-        callback(null, Date.now() + "--" + file.originalname);
-    }
-})
+    filename(_req, file, callback) {
+        callback(null, `${Date.now()}-${path.basename(file.originalname).replace(/[^\w.\-]/g, "_")}`);
+    },
+});
 
-
-export const upload = multer({ storage: tempStorage });
+export const upload = multer({
+    storage: tempStorage,
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    fileFilter(_req, file, callback) {
+        if (file.mimetype !== "application/pdf") {
+            callback(new Error("Only PDF files are allowed"));
+            return;
+        }
+        callback(null, true);
+    },
+});

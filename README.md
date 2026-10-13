@@ -1,78 +1,42 @@
-# Brainly - Your Second Brain Application
+# Brainly – Second Brain backend
 
-## Overview
-Brainly is an innovative "second brain" application designed to help users store, organize, and manage their important data efficiently. It serves as a centralized hub for all types of critical information, such as YouTube links, tweets, PDF documents, and more. With advanced search capabilities and seamless user authentication, Brainly ensures that your valuable data is always at your fingertips.
+Express + TypeScript + MongoDB API for saving "memories" (links, tweets, YouTube links, PDFs), searching them, and signing in with email/password or Google (Auth0).
 
----
+## Setup
+```bash
+npm install
+cp .env.Example .env     # fill in values
+npm run dev              # ts-node-dev
+npm test                 # compiles, then runs the API tests (no MongoDB needed)
+npm run build && npm start
+```
+Required: `db_URL`, `JWT_SECRET_KEY`. Optional features: Auth0 (`secret`, `baseURL`, `clientID`, `issuerBaseURL`), Cloudinary (`cloud_name`, `api_key`, `api_secret`), Hugging Face (`HuggingFaceAccessKey`). See `.env.Example`.
 
-## Key Features
+## API (all under `/api`; JSON)
+Send `Authorization: Bearer <token>` on every route except signup/signin.
 
-### 1. **User-Friendly Data Management**
-- Allows users to create, read, update, and delete (CRUD) "memories" to store essential information.
-- Supports various data types like:
-  - YouTube links
-  - Tweets
-  - PDF documents
-  - Custom notes and more.
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/signup` | `{name,email,password(8-72)}` → `201 {token,user}` |
+| POST | `/signin` | `{email,password}` → `{token,user}`; `401` on bad credentials |
+| GET | `/google-signin`, `/google-signup`, `/user-details` | Auth0 Google flow (503 when not configured); `/user-details` returns `{token}` |
+| POST | `/signout` | Stateless: the client discards its token |
+| POST | `/memory-post` | `{type: pdf\|tweet\|YoutubeLink\|link, link, title, desc, tags}`; the owner is the token's user |
+| GET | `/memory-get` | The caller's memories (`?type=` filter) |
+| GET | `/memory-getData?id=` | Title/desc/tags of one memory |
+| POST | `/memory-update` | `{MemoryObjectId, ...changed fields}` (own memories only) |
+| POST | `/memory-delete` | `{MemoryObjectId}` (own memories only) |
+| POST | `/generate-embeddings` | `{MemoryObjectId}` – stores a Hugging Face embedding |
+| POST | `/generate-Search-embedding` | `{keyword}` – searches the caller's memories only |
+| POST | `/fileUpload` | multipart, field `pdf` (≤10 MB) → Cloudinary URL |
+| GET | `/health` (no `/api`) | Health check |
 
-### 2. **Advanced Search Capabilities**
-- Implements **vector search embeddings** for intelligent and context-aware data retrieval.
-- Uses **MongoDB Atlas Search** to enable keyword-based search functionality, ensuring users can locate their content quickly and accurately.
+Search uses MongoDB Atlas Search (index named `query_search` on the `memories` collection, dynamic mapping) and falls back to a plain text match when the index is unavailable.
 
-### 3. **Secure and Seamless Authentication**
-- Provides secure user authentication and authorization using **Auth0**.
-- Supports **Google Authentication** for quick and easy user sign-up and sign-in.
+## Deploy (Render + Atlas)
+1. MongoDB Atlas M0 cluster, allow `0.0.0.0/0`, copy the connection string into `db_URL`.
+2. Render → New Web Service: build `npm install --include=dev && npm run build`, start `npm start`, health check `/health`.
+3. Set the env vars; set `CORS_ORIGIN` to the frontend URL and `baseURL` to the Render URL.
+4. In Auth0, add `<baseURL>/callback` as an allowed callback URL and the frontend URL as allowed logout URL.
 
-### 4. **Scalable and Robust Architecture**
-- Built with a modern tech stack:
-  - **TypeScript** for type-safe, maintainable code.
-  - **Node.js** for scalable backend services.
-  - **Express** for efficient API development.
-- Secured with **dotenv** for environment variable management.
-
-### 5. **Persistent and Reliable Storage**
-- Leverages **MongoDB Atlas** for highly scalable and reliable data storage, ensuring data integrity and high availability.
-
----
-
-## Tech Stack
-- **TypeScript**: For strongly-typed, maintainable code.
-- **Node.js**: For building scalable server-side applications.
-- **Express**: For creating RESTful APIs and efficient backend communication.
-- **MongoDB Atlas**: For cloud-based, scalable database management.
-- **Auth0**: For secure and simplified user authentication.
-- **dotenv**: For managing sensitive environment variables.
-
----
-
-## How It Works
-1. **User Authentication**:
-   - Users sign up or sign in via Auth0 or Google Authentication.
-   - Secure token-based authorization ensures data privacy and security.
-
-2. **Data Management**:
-   - Users can create memories to store essential data.
-   - CRUD operations allow complete control over the stored information.
-
-3. **Search Functionality**:
-   - Vector embeddings analyze the context and semantics of data for smarter search results.
-   - MongoDB Atlas Search handles keyword-based queries with precision.
-
----
-
-## Benefits
-- **Centralized Information**: Consolidate all critical data in one place.
-- **Efficient Retrieval**: Advanced search capabilities save time and effort.
-- **Secure Access**: Robust authentication ensures data privacy.
-- **Scalability**: Designed to grow with your needs using cutting-edge technologies.
-
----
-
-## Future Enhancements
-- **Integration with AI** for intelligent data categorization and recommendations.
-- **Cross-Platform Support** for desktop and mobile applications.
-- **Collaboration Features** to share and manage data with teams.
-
----
-
-Start using Brainly today and never lose track of your important information!
+**Security note:** earlier versions of this repo contained a Cloudinary API secret in the source. Rotate it in the Cloudinary dashboard.

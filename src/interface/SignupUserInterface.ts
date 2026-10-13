@@ -2,5 +2,5 @@ export interface SignupUserInterface {
     name: string;
     email: string;
     password: string;
-    SecretKey: string;
+    SecretKey?: string; // legacy field, no longer written
 }

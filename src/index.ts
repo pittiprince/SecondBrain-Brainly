@@ -1,32 +1,25 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-const app: express.Application = express();
-const PORT: number = 3000;
-import UserSignupRouter from './routes/SignupRoutes';
+import dotenv from 'dotenv';
+dotenv.config();
+import { createApp } from './createApp';
 import { connectDb } from './config/dBConnection';
-import { auth } from 'express-openid-connect';
-import { config } from './config/Auth0Config';
-import { SignInRouter } from './routes/SigninRoutes';
-import { MemoryRouter } from './routes/MemoryRoutes';
-import { FileUploadRouter } from './routes/fileUpload';
-import { generateEmbeddings } from './routes/generateEmbeddingsRoutes';
-import { SignOutRouter } from './routes/SignOut';
 
+const missing = ['db_URL', 'JWT_SECRET_KEY'].filter((name) => !process.env[name]);
+if (missing.length > 0) {
+    console.error(`Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+}
+if (!process.env.HuggingFaceAccessKey) console.warn('HuggingFaceAccessKey is not set: embedding generation will not work');
+if (!process.env.cloud_name) console.warn('Cloudinary variables are not set: PDF upload will not work');
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(auth(config));
-app.use(cors());
-app.use('/api', UserSignupRouter);
-app.use('/api', SignInRouter);
-app.use('/api', MemoryRouter);
-app.use('/api', FileUploadRouter);
-app.use('/api', generateEmbeddings);
-app.use('/api', SignOutRouter)
+// hosting platforms (Render, ...) provide the port through PORT
+const PORT = Number(process.env.PORT) || 3000;
 
-
-
-app.listen(PORT, async () => {
-    await connectDb();
-    console.log(`Server is running on PORT ${PORT}`);
-})
+(async () => {
+    try {
+        await connectDb();
+        createApp().listen(PORT, '0.0.0.0', () => console.log(`Server is running on PORT ${PORT}`));
+    } catch (err: any) {
+        console.error('Could not start the server:', err.message);
+        process.exit(1);
+    }
+})();
