@@ -23,6 +23,11 @@ export const createApp = (): express.Application => {
     app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
     app.get('/health', (_req, res) => { res.json({ status: 'ok' }); });
+    // the API has no page of its own: send browsers to the web app when it is configured
+    app.get('/', (_req, res) => {
+        if (process.env.FRONTEND_URL) { res.redirect(process.env.FRONTEND_URL); return; }
+        res.json({ name: 'Brainly API', health: '/health', docs: 'see README' });
+    });
 
     // Auth0 (Google sign-in) is optional: only mounted when it is configured
     if (config.secret && config.baseURL && config.clientID && config.issuerBaseURL) {

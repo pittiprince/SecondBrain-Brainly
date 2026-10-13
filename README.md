@@ -40,3 +40,6 @@ Search uses MongoDB Atlas Search (index named `query_search` on the `memories` c
 4. In Auth0, add `<baseURL>/callback` as an allowed callback URL and the frontend URL as allowed logout URL.
 
 **Security note:** earlier versions of this repo contained a Cloudinary API secret in the source. Rotate it in the Cloudinary dashboard.
+
+## Demo
+Set `SEED_DEMO=true` to create demo@brainly.dev (password Demo@12345) with 10 saved memories. Set `FRONTEND_URL` to redirect `/` to the web app.

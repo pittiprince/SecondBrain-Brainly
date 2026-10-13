@@ -17,6 +17,7 @@ const PORT = Number(process.env.PORT) || 3000;
 (async () => {
     try {
         await connectDb();
+        if (process.env.SEED_DEMO === 'true') await (await import('./utilities/seed')).seedDemoData();
         createApp().listen(PORT, '0.0.0.0', () => console.log(`Server is running on PORT ${PORT}`));
     } catch (err: any) {
         console.error('Could not start the server:', err.message);
